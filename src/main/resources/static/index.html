@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TradeSimulator</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Courier New', monospace;
+            background: #e8f4fd;
+            color: #1a3a4a;
+            min-height: 100vh;
+        }
+
+        header {
+            background: #b8dff7;
+            border-bottom: 1px solid #89c4e8;
+            padding: 16px 32px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        header h1 { color: #0a6ea3; font-size: 1.4rem; letter-spacing: 4px; }
+        header span { color: #5a8fa8; font-size: 0.8rem; }
+
+        .container { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; padding: 24px 32px; }
+
+        .card {
+            background: #ffffff;
+            border: 1px solid #b8dff7;
+            border-radius: 6px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(10, 110, 163, 0.08);
+        }
+
+        .card h2 {
+            color: #0a6ea3;
+            font-size: 0.75rem;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            margin-bottom: 16px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #b8dff7;
+        }
+
+        /* STOCKS */
+        .stock-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+        .stock-item {
+            background: #f0f8ff;
+            border: 1px solid #b8dff7;
+            padding: 12px;
+            border-radius: 4px;
+        }
+
+        .stock-ticker { color: #0a3a5a; font-weight: bold; font-size: 0.9rem; }
+        .stock-price { color: #0a6ea3; font-size: 1.1rem; margin-top: 4px; }
+        .stock-change { font-size: 0.75rem; margin-top: 2px; }
+        .up { color: #1a8a3a; }
+        .down { color: #cc2222; }
+
+        /* PORTFOLIO */
+        .portfolio-stat { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #d4edf9; }
+        .portfolio-stat:last-child { border-bottom: none; }
+        .stat-label { color: #5a8fa8; font-size: 0.85rem; }
+        .stat-value { color: #0a3a5a; font-weight: bold; }
+        .stat-value.green { color: #1a8a3a; }
+
+        .holdings-table { width: 100%; margin-top: 12px; }
+        .holdings-table th { color: #5a8fa8; font-size: 0.7rem; letter-spacing: 2px; text-align: left; padding: 6px 0; }
+        .holdings-table td { padding: 6px 0; font-size: 0.85rem; border-bottom: 1px solid #d4edf9; }
+
+        /* ORDER FORM */
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+        .form-group { display: flex; flex-direction: column; gap: 4px; }
+        .form-group label { color: #5a8fa8; font-size: 0.7rem; letter-spacing: 2px; }
+
+        select, input {
+            background: #f0f8ff;
+            border: 1px solid #89c4e8;
+            color: #1a3a4a;
+            padding: 8px 10px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.85rem;
+            border-radius: 4px;
+            width: 100%;
+        }
+
+        select:focus, input:focus { outline: none; border-color: #0a6ea3; }
+
+        #limitPriceGroup { display: none; }
+
+        button {
+            background: #0a6ea3;
+            color: #ffffff;
+            border: none;
+            padding: 10px 20px;
+            font-family: 'Courier New', monospace;
+            font-weight: bold;
+            font-size: 0.85rem;
+            letter-spacing: 2px;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 6px;
+            border-radius: 4px;
+        }
+
+        button:hover { background: #085a87; }
+
+        #orderMessage {
+            margin-top: 10px;
+            padding: 8px;
+            font-size: 0.8rem;
+            border-radius: 4px;
+            display: none;
+        }
+
+        .msg-success { background: #e6f4ec; border: 1px solid #1a8a3a; color: #1a8a3a; }
+        .msg-error   { background: #fde8e8; border: 1px solid #cc2222; color: #cc2222; }
+
+        /* TABLES */
+        .data-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+        .data-table th { color: #5a8fa8; font-size: 0.7rem; letter-spacing: 2px; text-align: left; padding: 6px 4px; border-bottom: 1px solid #b8dff7; }
+        .data-table td { padding: 8px 4px; border-bottom: 1px solid #d4edf9; color: #1a3a4a; }
+        .data-table tr:last-child td { border-bottom: none; }
+
+        .badge { padding: 2px 8px; border-radius: 2px; font-size: 0.7rem; font-weight: bold; }
+        .badge-buy  { background: #e6f4ec; color: #1a8a3a; border: 1px solid #1a8a3a; }
+        .badge-sell { background: #fde8e8; color: #cc2222; border: 1px solid #cc2222; }
+        .badge-pending { background: #fff8e6; color: #b87a00; border: 1px solid #b87a00; }
+
+        .full-width { grid-column: 1 / -1; }
+        .empty { color: #89c4e8; font-size: 0.8rem; text-align: center; padding: 20px; }
+
+        #clock { color: #0a6ea3; font-size: 0.8rem; }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>▶ TRADESIMULATOR</h1>
+    <span id="clock">--:--:--</span>
+</header>
+
+<div class="container">
+
+    <!-- STOCK PRICES -->
+    <div class="card">
+        <h2>Market Feed</h2>
+        <div class="stock-grid" id="stockGrid">
+            <div class="empty">Loading...</div>
+        </div>
+    </div>
+
+    <!-- PORTFOLIO -->
+    <div class="card">
+        <h2>Portfolio</h2>
+        <div id="portfolioStats"></div>
+        <table class="holdings-table" id="holdingsTable" style="display:none">
+            <thead>
+                <tr>
+                    <th>TICKER</th>
+                    <th>SHARES</th>
+                    <th>PRICE</th>
+                    <th>VALUE</th>
+                </tr>
+            </thead>
+            <tbody id="holdingsBody"></tbody>
+        </table>
+    </div>
+
+    <!-- ORDER FORM -->
+    <div class="card">
+        <h2>Place Order</h2>
+        <div class="form-row">
+            <div class="form-group">
+                <label>TICKER</label>
+                <select id="ticker">
+                    <option>AAPL</option>
+                    <option>GOOG</option>
+                    <option>TSLA</option>
+                    <option>AMZN</option>
+                    <option>MSFT</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>SIDE</label>
+                <select id="side">
+                    <option value="BUY">BUY</option>
+                    <option value="SELL">SELL</option>
+                </select>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label>ORDER TYPE</label>
+                <select id="orderType" onchange="toggleLimitPrice()">
+                    <option value="MARKET">MARKET</option>
+                    <option value="LIMIT">LIMIT</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>QUANTITY</label>
+                <input type="number" id="quantity" min="1" value="1">
+            </div>
+        </div>
+        <div class="form-group" id="limitPriceGroup">
+            <label>LIMIT PRICE ($)</label>
+            <input type="number" id="limitPrice" min="0" step="0.01" placeholder="0.00">
+        </div>
+        <button onclick="placeOrder()">EXECUTE ORDER</button>
+        <div id="orderMessage"></div>
+    </div>
+
+    <!-- PENDING ORDERS -->
+    <div class="card">
+        <h2>Pending Orders</h2>
+        <table class="data-table">
+            <thead>
+                <tr><th>TICKER</th><th>SIDE</th><th>QTY</th><th>LIMIT</th></tr>
+            </thead>
+            <tbody id="pendingBody">
+                <tr><td colspan="4" class="empty">No pending orders</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- TRADE HISTORY -->
+    <div class="card full-width">
+        <h2>Trade History</h2>
+        <table class="data-table">
+            <thead>
+                <tr><th>TIME</th><th>TICKER</th><th>SIDE</th><th>QTY</th><th>PRICE</th><th>TOTAL</th></tr>
+            </thead>
+            <tbody id="historyBody">
+                <tr><td colspan="6" class="empty">No trades yet</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+</div>
+
+<script>
+    let stockPrices = {};
+
+    // ── Clock ──────────────────────────────────────────
+    function updateClock() {
+        document.getElementById('clock').textContent = new Date().toLocaleTimeString();
+    }
+    setInterval(updateClock, 1000);
+    updateClock();
+
+    // ── Fetch stock prices ─────────────────────────────
+    async function fetchStocks() {
+        const res  = await fetch('/api/stocks');
+        const data = await res.json();
+        stockPrices = data;
+        const grid = document.getElementById('stockGrid');
+        grid.innerHTML = '';
+        for (const [ticker, stock] of Object.entries(data)) {
+            const change = stock.currentPrice - stock.previousPrice;
+            const pct    = ((change / stock.previousPrice) * 100).toFixed(2);
+            const cls    = change >= 0 ? 'up' : 'down';
+            const arrow  = change >= 0 ? '▲' : '▼';
+            grid.innerHTML += `
+                <div class="stock-item">
+                    <div class="stock-ticker">${ticker}</div>
+                    <div class="stock-price">$${stock.currentPrice.toFixed(2)}</div>
+                    <div class="stock-change ${cls}">${arrow} ${Math.abs(pct)}%</div>
+                </div>`;
+        }
+    }
+
+    // ── Fetch portfolio ────────────────────────────────
+    async function fetchPortfolio() {
+        const res  = await fetch('/api/portfolio');
+        const data = await res.json();
+
+        document.getElementById('portfolioStats').innerHTML = `
+            <div class="portfolio-stat">
+                <span class="stat-label">CASH BALANCE</span>
+                <span class="stat-value green">$${data.cashBalance.toFixed(2)}</span>
+            </div>
+            <div class="portfolio-stat">
+                <span class="stat-label">TOTAL VALUE</span>
+                <span class="stat-value">$${data.totalValue.toFixed(2)}</span>
+            </div>`;
+
+        const holdings = Object.entries(data.holdings);
+        if (holdings.length > 0) {
+            document.getElementById('holdingsTable').style.display = 'table';
+            const tbody = document.getElementById('holdingsBody');
+            tbody.innerHTML = '';
+            for (const [ticker, shares] of holdings) {
+                const price = stockPrices[ticker]?.currentPrice || 0;
+                const value = (price * shares).toFixed(2);
+                tbody.innerHTML += `
+                    <tr>
+                        <td>${ticker}</td>
+                        <td>${shares}</td>
+                        <td>$${price.toFixed(2)}</td>
+                        <td>$${value}</td>
+                    </tr>`;
+            }
+        }
+    }
+
+    // ── Fetch orders ───────────────────────────────────
+    async function fetchOrders() {
+        const res  = await fetch('/api/orders');
+        const data = await res.json();
+
+        const pb = document.getElementById('pendingBody');
+        pb.innerHTML = data.pending.length === 0
+            ? '<tr><td colspan="4" class="empty">No pending orders</td></tr>'
+            : data.pending.map(o => `
+                <tr>
+                    <td>${o.ticker}</td>
+                    <td><span class="badge badge-${o.side.toLowerCase()}">${o.side}</span></td>
+                    <td>${o.quantity}</td>
+                    <td>$${o.limitPrice.toFixed(2)}</td>
+                </tr>`).join('');
+
+        const hb = document.getElementById('historyBody');
+        hb.innerHTML = data.history.length === 0
+            ? '<tr><td colspan="6" class="empty">No trades yet</td></tr>'
+            : data.history.slice().reverse().map(o => `
+                <tr>
+                    <td>${new Date(o.timestamp).toLocaleTimeString()}</td>
+                    <td>${o.ticker}</td>
+                    <td><span class="badge badge-${o.side.toLowerCase()}">${o.side}</span></td>
+                    <td>${o.quantity}</td>
+                    <td>$${o.executedPrice.toFixed(2)}</td>
+                    <td>$${(o.executedPrice * o.quantity).toFixed(2)}</td>
+                </tr>`).join('');
+    }
+
+    // ── Place order ────────────────────────────────────
+    async function placeOrder() {
+        const body = {
+            ticker:    document.getElementById('ticker').value,
+            side:      document.getElementById('side').value,
+            orderType: document.getElementById('orderType').value,
+            quantity:  document.getElementById('quantity').value,
+            limitPrice: document.getElementById('limitPrice').value || '0'
+        };
+
+        const res  = await fetch('/api/orders', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body)
+        });
+        const data = await res.json();
+
+        const msg = document.getElementById('orderMessage');
+        msg.style.display = 'block';
+        if (data.error) {
+            msg.className = 'msg-error';
+            msg.textContent = '✗ ' + data.error;
+        } else {
+            msg.className = 'msg-success';
+            msg.textContent = '✓ ' + data.message;
+            refreshAll();
+        }
+        setTimeout(() => msg.style.display = 'none', 3000);
+    }
+
+    // ── Show/hide limit price ──────────────────────────
+    function toggleLimitPrice() {
+        const isLimit = document.getElementById('orderType').value === 'LIMIT';
+        document.getElementById('limitPriceGroup').style.display = isLimit ? 'block' : 'none';
+    }
+
+    // ── Refresh everything ─────────────────────────────
+    async function refreshAll() {
+        await fetchStocks();
+        await fetchPortfolio();
+        await fetchOrders();
+    }
+
+    refreshAll();
+    setInterval(refreshAll, 5000);
+</script>
+</body>
+</html>
