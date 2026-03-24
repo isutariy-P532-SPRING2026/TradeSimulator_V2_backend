@@ -1,10 +1,12 @@
 package com.tradesim.tradesimulator.service;
 
 import com.tradesim.tradesimulator.model.Stock;
+import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Component;
 import java.util.*;
 
 @Component
+@Primary
 public class MeanReversionStrategy implements PriceUpdateStrategy {
 
     private static final int WINDOW = 10;
