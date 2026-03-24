@@ -142,7 +142,20 @@
 
 <header>
     <h1>▶ TRADESIMULATOR</h1>
-    <span id="clock">--:--:--</span>
+    <div style="display:flex; align-items:center; gap:16px">
+        <div class="form-group" style="margin:0">
+            <label style="color:#5a8fa8; font-size:0.7rem; letter-spacing:2px">USER</label>
+            <select id="activeUser" onchange="refreshAll()" 
+                    style="padding:4px 8px; font-size:0.8rem">
+                <option value="alice">Alice</option>
+                <option value="bob">Bob</option>
+                <option value="carol">Carol</option>
+            </select>
+        </div>
+        <span id="alertBadge" style="display:none; background:#cc2222; color:#fff;
+              border-radius:50%; padding:2px 8px; font-size:0.75rem; cursor:pointer">0</span>
+        <span id="clock">--:--:--</span>
+    </div>
 </header>
 
 <div class="container">
@@ -241,10 +254,57 @@
         </table>
     </div>
 
+    <!-- PRICING STRATEGY -->
+    <div class="card">
+        <h2>Pricing Strategy</h2>
+        <div class="form-row">
+            <div class="form-group">
+                <label>MODEL</label>
+                <select id="strategySelect">
+                    <option value="RANDOM_WALK">Random Walk</option>
+                    <option value="MEAN_REVERSION">Mean Reversion</option>
+                    <option value="TREND_FOLLOWING">Trend Following</option>
+                </select>
+            </div>
+            <div class="form-group" style="justify-content:flex-end">
+                <button onclick="setStrategy()" style="margin-top:20px">APPLY</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- NOTIFICATION CHANNELS -->
+    <div class="card">
+        <h2>Notification Channels</h2>
+        <div style="display:flex; gap:20px; flex-wrap:wrap; margin-bottom:12px">
+            <label style="font-size:0.85rem">
+                <input type="checkbox" id="ch_console" checked disabled> Console (always on)
+            </label>
+            <label style="font-size:0.85rem">
+                <input type="checkbox" id="ch_email"> Email
+            </label>
+            <label style="font-size:0.85rem">
+                <input type="checkbox" id="ch_sms"> SMS
+            </label>
+            <label style="font-size:0.85rem">
+                <input type="checkbox" id="ch_dashboard"> Dashboard Badge
+            </label>
+        </div>
+        <button onclick="saveNotifPrefs()">SAVE PREFERENCES</button>
+        <div id="notifMessage" style="display:none; margin-top:8px; 
+             font-size:0.8rem; color:#1a8a3a"></div>
+    </div>
+
+
 </div>
 
 <script>
     let stockPrices = {};
+
+    const BASE = 'https://YOUR-APP.onrender.com';
+
+    function getActiveUser() {
+        return document.getElementById('activeUser')?.value || 'alice';
+    }
 
     // ── Clock ──────────────────────────────────────────
     function updateClock() {
@@ -255,7 +315,7 @@
 
     // ── Fetch stock prices ─────────────────────────────
     async function fetchStocks() {
-        const res  = await fetch('/api/stocks');
+        const res = await fetch(`${BASE}/api/stocks`);
         const data = await res.json();
         stockPrices = data;
         const grid = document.getElementById('stockGrid');
@@ -276,7 +336,7 @@
 
     // ── Fetch portfolio ────────────────────────────────
     async function fetchPortfolio() {
-        const res  = await fetch('/api/portfolio');
+        const res = await fetch(`${BASE}/api/portfolio?userId=${getActiveUser()}`);
         const data = await res.json();
 
         document.getElementById('portfolioStats').innerHTML = `
@@ -310,7 +370,7 @@
 
     // ── Fetch orders ───────────────────────────────────
     async function fetchOrders() {
-        const res  = await fetch('/api/orders');
+        const res = await fetch(`${BASE}/api/orders?userId=${getActiveUser()}`);
         const data = await res.json();
 
         const pb = document.getElementById('pendingBody');
@@ -348,7 +408,7 @@
             limitPrice: document.getElementById('limitPrice').value || '0'
         };
 
-        const res  = await fetch('/api/orders', {
+        const res = await fetch(`${BASE}/api/orders?userId=${getActiveUser()}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(body)
@@ -374,11 +434,61 @@
         document.getElementById('limitPriceGroup').style.display = isLimit ? 'block' : 'none';
     }
 
+    
+    async function setStrategy() {
+        const strategy = document.getElementById('strategySelect').value;
+        const res = await fetch(`${BASE}/api/strategy`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ strategy })
+        });
+    }
+
+    async function saveNotifPrefs() {
+        const channels = ['CONSOLE'];
+        if (document.getElementById('ch_email').checked)     channels.push('EMAIL');
+        if (document.getElementById('ch_sms').checked)       channels.push('SMS');
+        if (document.getElementById('ch_dashboard').checked) channels.push('DASHBOARD');
+        
+        const res = await fetch(`${BASE}/api/notifications?userId=${getActiveUser()}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ channels })
+        });
+        
+        const msg = document.getElementById('notifMessage');
+        msg.style.display = 'block';
+        msg.textContent = '✓ Preferences saved';
+        setTimeout(() => msg.style.display = 'none', 2000);
+    }
+
+    async function fetchAlerts() {
+        const res = await fetch(`${BASE}/api/alerts?userId=${getActiveUser()}`);
+        const data = await res.json();
+        const badge = document.getElementById('alertBadge');
+        if (data.unread > 0) {
+            badge.style.display = 'inline';
+            badge.textContent = data.unread + ' new';
+        } else {
+            badge.style.display = 'none';
+        }
+    }
+
+    async function loadNotifPrefs() {
+        const res = await fetch(`${BASE}/api/notifications?userId=${getActiveUser()}`);
+        const data = await res.json();
+        document.getElementById('ch_email').checked     = data.channels.includes('EMAIL');
+        document.getElementById('ch_sms').checked       = data.channels.includes('SMS');
+        document.getElementById('ch_dashboard').checked = data.channels.includes('DASHBOARD');
+    }
+
     // ── Refresh everything ─────────────────────────────
     async function refreshAll() {
         await fetchStocks();
         await fetchPortfolio();
         await fetchOrders();
+        await fetchAlerts();      
+        await loadNotifPrefs();   
     }
 
     refreshAll();
