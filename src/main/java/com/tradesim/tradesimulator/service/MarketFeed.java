@@ -12,8 +12,12 @@ import java.util.*;
 public class MarketFeed {
 
     // Strategy pattern — depends on interface, not implementation
-    private final PriceUpdateStrategy pricingStrategy;
+    private PriceUpdateStrategy pricingStrategy;
     private final Random random;
+
+    public void setStrategy(PriceUpdateStrategy strategy) {
+    this.pricingStrategy = strategy;
+    }
 
     // Observer pattern — list of listeners
     private final List<PriceObserver> observers = new ArrayList<>();
