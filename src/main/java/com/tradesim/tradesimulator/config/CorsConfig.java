@@ -9,7 +9,7 @@ public class CorsConfig implements WebMvcConfigurer {
     public void addCorsMappings(CorsRegistry registry) {
         registry.addMapping("/api/**")
             .allowedOrigins(
-                "https://isutariy-p532-spring2026.github.io",
+                "https://isutariy-p532-spring2026.github.io/TradeSimulator_V2_frontend/",
                 "http://localhost:8080"
             )
             .allowedMethods("GET", "POST", "PUT", "DELETE");
