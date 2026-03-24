@@ -7,11 +7,10 @@ import org.springframework.web.servlet.config.annotation.*;
 public class CorsConfig implements WebMvcConfigurer {
     @Override
     public void addCorsMappings(CorsRegistry registry) {
-        registry.addMapping("/api/**")
-            .allowedOrigins(
-                "https://isutariy-p532-spring2026.github.io/TradeSimulator_V2_frontend/",
-                "http://localhost:8080"
-            )
-            .allowedMethods("GET", "POST", "PUT", "DELETE");
+        registry.addMapping("/**")        // ← changed from /api/**
+            .allowedOriginPatterns("*")   // ← changed from allowedOrigins
+            .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
+            .allowedHeaders("*")
+            .allowCredentials(false);
     }
 }
