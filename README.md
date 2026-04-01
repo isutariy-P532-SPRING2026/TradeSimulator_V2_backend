@@ -144,7 +144,7 @@ The Render Deploy Hook URL is stored as the GitHub Actions secret `RENDER_DEPLOY
 
 ---
 
-## Week 2 — Files Modified (Grading Reference)
+## Week 2 — Files Modified 
 
 | Change | Pre-existing files modified | Count |
 |---|---|---|
